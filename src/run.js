@@ -148,12 +148,20 @@ export async function run(o) {
   const quit = (code = 0, message = '') => {
     if (isQuitting) return;
     isQuitting = true;
-    cleanup();
-    log.stream.end();
+    // Every step may fail when the terminal is already gone (closed window,
+    // killed tmux session): writes then throw EIO. None of that may keep the
+    // process alive, so each step is guarded and exit always runs.
+    const attempt = (fn) => {
+      try {
+        fn();
+      } catch {}
+    };
+    attempt(cleanup);
+    attempt(() => log.stream.end());
     // stdout, not stderr: in interactive mode stderr is redirected to a file.
-    if (message) process.stdout.write(`${message}\n`);
+    if (message) attempt(() => process.stdout.write(`${message}\n`));
     if (log.errors.length && !headless) {
-      process.stdout.write(`blit-term: the game logged ${log.errors.length} error(s). Last: ${log.errors.at(-1)}\nFull log: ${logFile}\n`);
+      attempt(() => process.stdout.write(`blit-term: the game logged ${log.errors.length} error(s). Last: ${log.errors.at(-1)}\nFull log: ${logFile}\n`));
     }
     process.exit(code);
   };
@@ -163,8 +171,14 @@ export async function run(o) {
     screen.enter();
     input = new Input({ stdin: process.stdin, stdout: process.stdout, screen, targets, canvas, onQuit: () => quit(0), ...o.input });
     input.start();
-    process.on('SIGTERM', () => quit(0));
-    process.on('SIGHUP', () => quit(0));
+    for (const sig of ['SIGTERM', 'SIGHUP', 'SIGINT']) process.on(sig, () => quit(0));
+    // The terminal went away without a signal reaching us: stop instead of
+    // spinning on a dead TTY.
+    for (const stream of [process.stdin, process.stdout]) {
+      stream.on('error', () => quit(0));
+      stream.on('close', () => quit(0));
+    }
+    process.stdin.on('end', () => quit(0));
     process.on('uncaughtException', (err) => quit(1, `blit-term crashed: ${err?.stack ?? err}`));
     process.on('unhandledRejection', (err) => console.error('[blit-term] Unhandled rejection:', err));
   }

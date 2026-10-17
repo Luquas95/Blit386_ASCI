@@ -134,7 +134,13 @@ if (!values.headless && !process.env.BLIT_TERM_CHILD) {
     stderr: Bun.file(stderrFile),
     env: { ...process.env, BLIT_TERM_CHILD: '1' },
   });
-  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => child.kill(sig));
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+    process.on(sig, () => {
+      child.kill(sig);
+      // A child that cannot shut down cleanly must not outlive us.
+      setTimeout(() => child.kill('SIGKILL'), 1500).unref();
+    });
+  }
   const code = await child.exited;
   if (code !== 0 && existsSync(stderrFile) && statSync(stderrFile).size > 0) {
     process.stderr.write(`blit-term: native output was saved to ${stderrFile}\n`);
