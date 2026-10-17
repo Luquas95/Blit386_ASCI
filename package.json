@@ -1,0 +1,25 @@
+{
+  "name": "blit386-term",
+  "version": "0.1.0",
+  "description": "Run unmodified BLIT386 games in a terminal: WebGPU (Dawn) or software renderer, truecolor half-block output, keyboard and mouse input.",
+  "type": "module",
+  "license": "ISC",
+  "bin": {
+    "blit-term": "./bin/blit-term.js"
+  },
+  "files": ["bin", "src", "README.md"],
+  "scripts": {
+    "test": "bun test"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.100",
+    "node-web-audio-api": "^2.2.0",
+    "webgpu": "^0.3.10"
+  },
+  "peerDependencies": {
+    "blit386": ">=1.7.0"
+  }
+}
