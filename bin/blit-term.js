@@ -41,6 +41,10 @@ Game
   --seed <n>           pass ?seed=<n> to the game (repeatable runs)
   --query <q>          extra query string, e.g. "level=3&debug=1"
   --log <file>         log file, default ~/.local/state/blit-term/last.log
+  --storage <dir>      where localStorage is saved (one JSON file per game),
+                       default ~/.local/state/blit-term/storage; headless runs
+                       keep it in memory unless this is given
+  --no-storage         keep localStorage in memory only (nothing is saved)
 
 Headless (no terminal, for tests and snapshots)
   --headless           run without a TTY
@@ -74,6 +78,8 @@ const { values, positionals } = parseArgs({
     seed: { type: 'string' },
     query: { type: 'string' },
     log: { type: 'string' },
+    storage: { type: 'string' },
+    'no-storage': { type: 'boolean', default: false },
     headless: { type: 'boolean', default: false },
     frames: { type: 'string', default: '120' },
     at: { type: 'string' },
@@ -154,6 +160,7 @@ const options = {
   search,
   fps: positiveNumber('fps', values.fps),
   logFile,
+  storageDir: values['no-storage'] ? null : values.storage === undefined ? undefined : resolve(values.storage),
   isDevMode: values.dev,
   isAudioEnabled: !values['no-audio'],
   isMuted: values.mute || values.headless,
