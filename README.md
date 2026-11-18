@@ -53,6 +53,9 @@ What differs:
 - **Keys in legacy terminals** (anything without the kitty keyboard protocol, including tmux) report presses only;
   releases are estimated from autorepeat. Kitty, WezTerm, Ghostty and foot report real releases.
 - **Gamepads and touch** are not available.
+- **localStorage** is saved to a JSON file per game in `~/.local/state/blit-term/storage/` (named after the game's
+  folder), so saves and settings survive between runs as in the browser. `sessionStorage` lasts until the game closes.
+  Headless runs keep localStorage in memory unless `--storage <dir>` is given; `--no-storage` turns saving off.
 
 ## Options
 
@@ -69,6 +72,7 @@ Run `blit-term --help` for the full list. The important ones:
 | `--dev` | off | behave like `bun run dev` (no splash, `BT.isDevMode`) |
 | `--seed <n>` | | pass `?seed=<n>` to the game |
 | `--mute`, `--no-audio` | | silence the output, or remove audio entirely |
+| `--storage <dir>`, `--no-storage` | state folder | where localStorage is saved, or keep it in memory only |
 
 ## Development
 

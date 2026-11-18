@@ -10,6 +10,7 @@ import { unwrap } from './env/canvas.js';
 import { installAudio } from './env/audio.js';
 import { installDom } from './env/dom.js';
 import { installGpu } from './env/gpu.js';
+import { installStorage, storageFile } from './env/storage.js';
 import { Input } from './term/input.js';
 import { Screen } from './term/screen.js';
 
@@ -81,11 +82,14 @@ class MemoryTerminal {
  * @param {boolean} [o.isDevMode] behave like the Vite dev server: no splash, BT.isDevMode true
  * @param {boolean} [o.isAudioEnabled] false: no AudioContext at all (the engine runs silent)
  * @param {boolean} [o.isMuted] audio runs but goes nowhere; default true when headless
+ * @param {string | null} [o.storageDir] folder for localStorage files; null keeps it in memory. Default: the state
+ *   folder when interactive, memory when headless (snapshots must not depend on earlier runs)
  */
 export async function run(o) {
   const gameFile = resolve(o.gameFile);
   const projectDir = o.projectDir ?? findProjectDir(gameFile);
-  const logFile = o.logFile ?? join(process.env.XDG_STATE_HOME ?? join(process.env.HOME ?? '.', '.local/state'), 'blit-term/last.log');
+  const stateDir = join(process.env.XDG_STATE_HOME ?? join(process.env.HOME ?? '.', '.local/state'), 'blit-term');
+  const logFile = o.logFile ?? join(stateDir, 'last.log');
   const headless = o.headless ?? null;
   const log = redirectConsole(logFile, o.echoLog);
   console.log(`[blit-term] game ${gameFile}, project ${projectDir}`);
@@ -128,6 +132,11 @@ export async function run(o) {
     gpu: gpuInfo?.gpu ?? null,
     viewport: () => ({ cols: screen.cols, rows: screen.rows }),
   });
+  const storageDir = o.storageDir === undefined ? (headless ? null : join(stateDir, 'storage')) : o.storageDir;
+  const storageFilePath = storageDir ? storageFile(storageDir, resolve(projectDir)) : null;
+  installStorage({ file: storageFilePath });
+  console.log(`[blit-term] localStorage: ${storageFilePath ?? 'memory only'}`);
+
   // Release build by default (splash shown, dev keys off); --dev matches `bun run dev`.
   globalThis.__BLIT386_DEV__ = o.isDevMode === true;
 
