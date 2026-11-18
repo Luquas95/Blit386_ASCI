@@ -22,22 +22,116 @@ game.js ──import 'blit386'──▶ the real engine (from the game's node_mo
 
 ## Quick start
 
-Requirements: Bun 1.3+, Linux or macOS, a terminal with truecolor (or use `--colors 256`).
+Already have Bun and a BLIT386 game? Inside the game's folder:
 
 ```bash
-# inside a BLIT386 game project
-bun add -d github:Luquas95/Blit386_ASCI
-bunx blit-term                 # runs src/game.js
-bunx blit-term --status        # with a status line (backend, size, fps, key mode)
+bun add -d github:Luquas95/Blit386_ASCI   # once per game
+bunx blit-term                            # play src/game.js in this terminal
 ```
 
-Or add a script to the game's `package.json`:
+Quit with `Ctrl+C`. The full steps, from a fresh machine, are below.
+
+## Installation
+
+### 1. Requirements
+
+- **Linux or macOS.** Windows is not supported natively.
+- **A terminal with truecolor** (24-bit color), which most current terminals have: Kitty, WezTerm, Ghostty, foot,
+  iTerm2, GNOME Terminal, Konsole and others. Kitty, WezTerm, Ghostty and foot are best, because they report key releases (see
+  [What differs](#what-is-the-same-as-in-the-browser)). Older terminals work with `--colors 256`.
+- **Bun 1.3 or newer.**
+
+### 2. Install Bun
+
+```bash
+# Debian / Ubuntu only: the installer needs unzip
+sudo apt install unzip
+
+curl -fsSL https://bun.sh/install | bash
+```
+
+Open a new terminal (or run `source ~/.bashrc`) and check it with `bun --version`.
+
+If a terminal still says `bun: command not found`, it is probably a login shell that reads `~/.profile` instead of
+`~/.bashrc` (some web and remote terminals do this). Add Bun to `~/.profile` as well:
+
+```bash
+echo 'export PATH="$HOME/.bun/bin:$PATH"' >> ~/.profile
+```
+
+### 3. Optional system libraries
+
+Both are optional: without them the game still runs, `blit-term` falls back automatically.
+
+| For | Linux package (Debian / Ubuntu) | Without it |
+| --- | --- | --- |
+| Sound | `libasound2t64` (older releases: `libasound2`) | the game runs silent |
+| GPU rendering (WebGPU through Dawn) | a Vulkan driver, e.g. `mesa-vulkan-drivers` | the engine's software renderer is used |
+
+macOS needs nothing extra: sound uses Core Audio and WebGPU uses Metal.
+
+### 4. Install `blit-term`
+
+**In a game project (recommended).** The game then pins the version it was tested with, and anyone who clones it gets
+`blit-term` with a plain `bun install`.
+
+```bash
+cd my-blit386-game
+bun add -d github:Luquas95/Blit386_ASCI
+```
+
+Add a script to the game's `package.json` so it starts with `bun run term`:
 
 ```json
-{ "scripts": { "term": "blit-term --status" } }
+{ "scripts": { "term": "blit-term" } }
 ```
 
-Quit with `Ctrl+C`.
+**Or once for all games**, as a global command:
+
+```bash
+bun add -g github:Luquas95/Blit386_ASCI
+```
+
+A global `blit-term` still uses each game's own copy of the engine, so the game's dependencies must be installed
+(`bun install` in its folder).
+
+### 5. Play
+
+```bash
+cd my-blit386-game
+bun install          # the game's dependencies, once
+bun run term         # or: bunx blit-term, or: blit-term (global install)
+```
+
+Run it **inside the game's folder**: `blit-term` looks for `src/game.js` (or `src/game.ts`, `src/main.js`,
+`src/main.ts`) there. Another entry file can be given as an argument: `blit-term path/to/game.js`.
+
+**Make the terminal big enough for a sharp picture.** One character cell shows 1x2 game pixels, so a game of W x H
+pixels needs **W columns and H / 2 rows** (one more row with `--status`). A 320x240 game needs 320x120, a 128x80 game
+128x40. Check your terminal with `stty size` (prints rows, then columns). A smaller terminal gets a shrunk, blurrier
+picture; make the window bigger or the font smaller. `--status` shows the size in use.
+
+### Updating and removing
+
+```bash
+bun update blit386-term                     # in a game project
+bun add -g github:Luquas95/Blit386_ASCI     # global: installs the latest version again
+
+bun remove blit386-term                     # from a game project
+bun remove -g blit386-term                  # global
+```
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| `bun: command not found` | See [Install Bun](#2-install-bun): open a new terminal, or add Bun to `~/.profile`. |
+| `error: Script not found "term"` | Run it in the game's folder, and check that `package.json` has the `term` script. |
+| The picture is blurry | The terminal is smaller than the game; see the size rule in [Play](#5-play). `--scale nearest` keeps it sharp but drops pixels. |
+| No sound | Install the sound library from [step 3](#3-optional-system-libraries). The engine also waits for the first key press before it plays anything, as in a browser. |
+| Keys stick or repeat | Your terminal has no key-release reports (tmux and most older terminals). Use Kitty, WezTerm, Ghostty or foot, or tune `--repeat-delay` to your keyboard's autorepeat delay. |
+| `Ctrl+C` does not quit | Some web terminals keep `Ctrl+C` for themselves. Close the tab, or run `pkill -f blit-term` from another terminal. |
+| Anything else | Read the logs: `~/.local/state/blit-term/last.log` (the game's console) and `last.stderr.log` (native libraries). |
 
 ## What is the same as in the browser
 
@@ -82,8 +176,6 @@ bun test                                    # unit tests
 bun test/compare-shots.js --demos <dir>     # pixel comparison against the demos' reference shots
 bun bin/blit-term.js --headless --png out.png path/to/game.js
 ```
-
-Logs: `~/.local/state/blit-term/last.log` (engine console) and `last.stderr.log` (native libraries).
 
 ## License
 
